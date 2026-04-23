@@ -1,0 +1,5 @@
+-e member.db
+server.log
+query_log.txt
+__pycache__/
+*.pyc
