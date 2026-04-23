@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>初始化 - 设置管理员账号</title>
+<style>
+  body { font-family: -apple-system, 'PingFang SC', Arial, sans-serif; background: #f5f5f5; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+  .container { background: white; border-radius: 16px; padding: 40px; width: 90%; max-width: 420px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
+  h2 { text-align: center; color: #333; margin-bottom: 30px; font-size: 1.5rem; }
+  .form-group { margin-bottom: 20px; }
+  .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #555; font-size: 0.9rem; }
+  .form-group input { width: 100%; padding: 12px 14px; border: 1.5px solid #dee2e6; border-radius: 8px; font-size: 1rem; box-sizing: border-box; }
+  .form-group input:focus { outline: none; border-color: #007bff; }
+  .btn { width: 100%; padding: 14px; background: #007bff; color: white; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: background 0.2s; }
+  .btn:hover { background: #0056b3; }
+  .btn:disabled { background: #ccc; cursor: not-allowed; }
+  .error { color: #dc3545; text-align: center; margin-bottom: 15px; display: none; }
+  .success { color: #28a745; text-align: center; margin-bottom: 15px; display: none; }
+  .links { text-align: center; margin-top: 20px; }
+  .links a { color: #007bff; text-decoration: none; font-size: 0.9rem; }
+  .links a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>设置管理员账号</h2>
+  <div id="msg" class="error"></div>
+  <div id="successMsg" class="success"></div>
+  <form id="initForm">
+    <div class="form-group">
+      <label>管理员账号</label>
+      <input type="text" id="username" required placeholder="请输入管理员账号">
+    </div>
+    <div class="form-group">
+      <label>管理员密码</label>
+      <input type="password" id="password" required placeholder="请输入管理员密码">
+    </div>
+    <button type="submit" class="btn" id="submitBtn">初始化数据库</button>
+  </form>
+  <div class="links">
+    <a href="/">返回首页</a> | <a href="/admin">进入后台</a>
+  </div>
+</div>
+
+<script>
+const API = '/api';
+
+document.getElementById('initForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('submitBtn');
+  const msg = document.getElementById('msg');
+  const successMsg = document.getElementById('successMsg');
+  
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  
+  if (!username || !password) {
+    msg.textContent = '账号和密码不能为空';
+    msg.style.display = 'block';
+    return;
+  }
+  
+  btn.disabled = true;
+  btn.textContent = '初始化中...';
+  msg.style.display = 'none';
+  successMsg.style.display = 'none';
+  
+  try {
+    const res = await fetch(`${API}/admin/init`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    
+    const data = await res.json();
+    
+    if (res.ok) {
+      successMsg.innerHTML = `✅ 数据库初始化成功！<br>管理员账号：${username}<br><a href="/admin">点击进入后台</a>`;
+      successMsg.style.display = 'block';
+      document.getElementById('initForm').style.display = 'none';
+    } else {
+      msg.textContent = data.error || '初始化失败';
+      msg.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = '重新尝试';
+    }
+  } catch (e) {
+    msg.textContent = '网络错误，请稍后重试';
+    msg.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = '初始化数据库';
+  }
+});
+</script>
+</body>
+</html>

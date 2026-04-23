@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>会员管理后台</title>
+<style>
+  :root {
+    --primary: #007bff;
+    --success: #28a745;
+    --danger: #dc3545;
+    --warning: #ffc107;
+    --bg: #f5f5f5;
+    --card: #fff;
+    --text: #333;
+    --text-secondary: #6c757d;
+    --border: #dee2e6;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, 'PingFang SC', Arial, sans-serif; }
+  body { background: var(--bg); min-height: 100vh; }
+  
+  .header {
+    background: var(--primary); color: white; padding: 16px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .header h1 { font-size: 1.3rem; }
+  .header .logout { color: white; text-decoration: none; font-size: 0.9rem; }
+  .header .logout:hover { text-decoration: underline; }
+  
+  .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+  
+  .card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-size: 1.1rem; font-weight: 600; margin-bottom: 16px;
+    padding-bottom: 12px; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  
+  .form-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;
+  }
+  .form-group { display: flex; flex-direction: column; }
+  .form-group label { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
+  .form-group input, .form-group select {
+    padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 8px;
+    font-size: 0.95rem; background: #fafafa; transition: border-color 0.2s;
+  }
+  .form-group input:focus, .form-group select:focus {
+    outline: none; border-color: var(--primary); background: #fff;
+  }
+  
+  .btn {
+    padding: 10px 20px; border: none; border-radius: 8px; font-size: 0.9rem;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: #0056b3; }
+  .btn-success { background: var(--success); color: white; }
+  .btn-success:hover { background: #218838; }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-danger:hover { background: #c82333; }
+  .btn-warning { background: var(--warning); color: #333; }
+  .btn-warning:hover { background: #e0a800; }
+  .btn-info { background: #17a2b8; color: white; }
+  .btn-info:hover { background: #138496; }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+  th { background: #f8f9fa; font-weight: 600; font-size: 0.85rem; color: var(--text-secondary); }
+  td { font-size: 0.9rem; }
+  tr:hover { background: #f8f9fa; }
+  
+  .actions { display: flex; gap: 6px; }
+  .actions .btn { padding: 6px 12px; font-size: 0.8rem; }
+  
+  .level-badge {
+    display: inline-block; padding: 3px 10px; border-radius: 12px;
+    font-size: 0.8rem; font-weight: 500;
+  }
+  .level-normal { background: #e9ecef; color: #495057; }
+  .level-vip { background: #cfe2ff; color: #084298; }
+  .level-diamond { background: #d1e7dd; color: #0f5132; }
+  
+  .modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center;
+    z-index: 1000;
+  }
+  .modal {
+    background: white; border-radius: 12px; width: 90%; max-width: 500px;
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal-header {
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+    font-weight: 600; font-size: 1rem; display: flex; justify-content: space-between;
+  }
+  .modal-header .close { cursor: pointer; font-size: 1.5rem; line-height: 1; }
+  .modal-body { padding: 20px; }
+  .modal-footer { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+  
+  .login-container {
+    min-height: 100vh; display: flex; justify-content: center; align-items: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+  .login-box {
+    background: white; border-radius: 16px; padding: 40px; width: 90%; max-width: 400px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  }
+  .login-box h2 { text-align: center; color: var(--text); margin-bottom: 30px; font-size: 1.5rem; }
+  .login-box .form-group { margin-bottom: 20px; }
+  .login-box .btn { width: 100%; padding: 14px; font-size: 1rem; }
+  .login-error { color: var(--danger); text-align: center; margin-bottom: 15px; display: none; }
+  
+  .pagination { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 16px; }
+  .pagination button { padding: 8px 14px; border: 1px solid var(--border); background: white; border-radius: 6px; cursor: pointer; }
+  .pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .pagination button.active { background: var(--primary); color: white; border-color: var(--primary); }
+  .pagination span { color: var(--text-secondary); font-size: 0.9rem; }
+  
+  .toast {
+    position: fixed; bottom: 20px; right: 20px; padding: 14px 20px;
+    background: #333; color: white; border-radius: 8px; display: none; z-index: 2000;
+  }
+  .toast.success { background: var(--success); }
+  .toast.error { background: var(--danger); }
+  
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  .stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    text-align: center;
+  }
+  .stat-card .stat-num {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--primary);
+  }
+  .stat-card .stat-num.green { color: #28a745; }
+  .stat-card .stat-num.orange { color: #fd7e14; }
+  .stat-card .stat-num.red { color: #dc3545; }
+  .stat-card .stat-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 6px;
+  }
+  .stat-card .stat-sub {
+    font-size: 0.75rem;
+    color: #aaa;
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+<!-- 登录页 -->
+<div id="loginPage" class="login-container">
+  <div class="login-box">
+    <h2>管理员登录</h2>
+    <div id="loginError" class="login-error">账号或密码错误</div>
+    <form id="loginForm">
+      <div class="form-group">
+        <label>管理员账号</label>
+        <input type="text" id="loginUsername" required placeholder="请输入账号">
+      </div>
+      <div class="form-group">
+        <label>管理员密码</label>
+        <input type="password" id="loginPassword" required placeholder="请输入密码">
+      </div>
+      <button type="submit" class="btn btn-primary">登录</button>
+    </form>
+  </div>
+</div>
+
+<!-- 管理后台 -->
+<div id="adminPage" style="display:none;">
+  <div class="header">
+    <h1>会员管理后台</h1>
+    <a href="#" class="logout" onclick="logout()">退出登录</a>
+  </div>
+  
+  <div class="container">
+    <!-- 统计卡片 -->
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card">
+        <div class="stat-num" id="statTotalMembers">-</div>
+        <div class="stat-label">会员总数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num green" id="statTotalRevenue">-</div>
+        <div class="stat-label">累计收入</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num orange" id="statMonthlyRevenue">-</div>
+        <div class="stat-label">本月收入</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num red" id="statExpiringSoon">-</div>
+        <div class="stat-label">即将到期</div>
+      </div>
+    </div>
+    
+    <!-- 会员管理与数据操作 合并卡片 -->
+    <div class="card">
+      <div class="card-title">
+        <span>添加新会员 & 数据管理</span>
+      </div>
+      <form id="addMemberForm" style="margin-bottom:20px;">
+        <div style="font-size:0.85rem;font-weight:600;color:var(--text-secondary);margin-bottom:10px;">➕ 添加新会员</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>用户名 *</label>
+            <input type="text" name="username" required placeholder="唯一用户名">
+          </div>
+          <div class="form-group">
+            <label>会员等级</label>
+            <select name="level">
+              <option value="普通">普通</option>
+              <option value="VIP">VIP</option>
+              <option value="钻石会员">钻石会员</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>视频流数</label>
+            <input type="number" name="video_streams" value="0" min="0">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-success" style="margin-top:12px;">添加会员</button>
+      </form>
+      
+      <div style="border-top:1px dashed var(--border); padding-top:16px;">
+        <div style="font-size:0.85rem;font-weight:600;color:var(--text-secondary);margin-bottom:10px;">📂 数据管理</div>
+        <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+          <button class="btn btn-primary" onclick="exportData()">📥 导出数据</button>
+          <button class="btn btn-success" onclick="document.getElementById('importFile').click()">📤 导入数据</button>
+          <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(this)">
+          <label style="font-size:0.85rem; color:#666;">
+            <input type="checkbox" id="importOverwrite" style="margin-right:4px;">覆盖现有数据
+          </label>
+        </div>
+        <div id="importResult" style="margin-top:12px; display:none;"></div>
+      </div>
+    </div>
+    
+    <!-- 会员列表 -->
+    <div class="card">
+      <div class="card-title">
+        <span>会员列表</span>
+        <span id="memberCount" style="font-weight:normal;color:#666;font-size:0.85rem;"></span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>用户名</th>
+              <th>等级</th>
+              <th>视频流数</th>
+              <th>到期日</th>
+              <th>剩余天数</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="memberTable"></tbody>
+        </table>
+      </div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 编辑会员弹窗 -->
+<div id="editModal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span>编辑会员</span>
+      <span class="close" onclick="closeEditModal()">&times;</span>
+    </div>
+    <div class="modal-body">
+      <form id="editMemberForm">
+        <input type="hidden" name="id">
+        <div class="form-group" style="margin-bottom:12px;">
+          <label>用户名</label>
+          <input type="text" name="username" required>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>会员等级</label>
+            <select name="level">
+              <option value="普通">普通</option>
+              <option value="VIP">VIP</option>
+              <option value="钻石会员">钻石会员</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>视频流数</label>
+            <input type="number" name="video_streams" min="0">
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeEditModal()" style="background:#e9ecef;color:#333;">取消</button>
+      <button class="btn btn-primary" onclick="submitEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 充值弹窗 -->
+<div id="rechargeModal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span>会员充值</span>
+      <span class="close" onclick="closeRechargeModal()">&times;</span>
+    </div>
+    <div class="modal-body">
+      <form id="rechargeForm">
+        <input type="hidden" name="member_id">
+        <p style="margin-bottom:12px;color:#666;">会员：<strong id="rechargeMemberName"></strong></p>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>充值金额</label>
+            <input type="number" name="recharge_amount" step="0.01" min="0" placeholder="0表示纯赠送">
+          </div>
+          <div class="form-group">
+            <label>充值月数</label>
+            <input type="number" name="recharge_months" min="0" value="0">
+          </div>
+          <div class="form-group">
+            <label>赠送月数</label>
+            <input type="number" name="gift_months" min="0" value="0">
+          </div>
+          <div class="form-group">
+            <label>赠送天数</label>
+            <input type="number" name="gift_days" min="0" value="0">
+          </div>
+          <div class="form-group">
+            <label>视频流数</label>
+            <input type="number" name="video_streams" min="0" value="0">
+          </div>
+          <div class="form-group">
+            <label>开始日期</label>
+            <input type="date" name="start_date" required>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+          <label>备注</label>
+          <input type="text" name="remark" placeholder="可选备注">
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeRechargeModal()" style="background:#e9ecef;color:#333;">取消</button>
+      <button class="btn btn-success" onclick="submitRecharge()">确认充值</button>
+    </div>
+  </div>
+</div>
+
+<!-- 充值记录查看弹窗 -->
+<div id="recordsModal" class="modal-overlay">
+  <div class="modal" style="max-width:700px;">
+    <div class="modal-header">
+      <span>充值记录</span>
+      <span class="close" onclick="closeRecordsModal()">&times;</span>
+    </div>
+    <div class="modal-body" id="recordsContent" style="max-height:400px;overflow-y:auto;">
+      <p style="text-align:center;color:#999;">加载中...</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeRecordsModal()" style="background:#e9ecef;color:#333;">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<script>
+const API = '/api';
+let currentPage = 1;
+const pageSize = 20;
+
+// 登录
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const username = document.getElementById('loginUsername').value;
+  const password = document.getElementById('loginPassword').value;
+  
+  const res = await fetch(`${API}/admin/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  });
+  
+  if (res.ok) {
+    sessionStorage.setItem('admin_user', username);
+    showAdminPage();
+  } else {
+    document.getElementById('loginError').style.display = 'block';
+  }
+});
+
+// 检查是否已登录
+async function checkAdmin() {
+  // 只有 sessionStorage 中有管理员记录时才自动登录
+  if (!sessionStorage.getItem('admin_user')) {
+    return; // 未登录，不自动跳转
+  }
+  
+  const res = await fetch(`${API}/admin/check`);
+  const data = await res.json();
+  if (data.exists) {
+    showAdminPage();
+  }
+}
+
+function showAdminPage() {
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('adminPage').style.display = 'block';
+  loadMembers();
+  loadStats();
+}
+
+function logout() {
+  sessionStorage.removeItem('admin_user');
+  location.reload();
+}
+
+// 加载统计数据
+async function loadStats() {
+  try {
+    const res = await fetch(`${API}/stats`);
+    const data = await res.json();
+    
+    document.getElementById('statTotalMembers').textContent = data.total_members ?? 0;
+    document.getElementById('statTotalRevenue').textContent = '¥' + (data.total_revenue ?? 0);
+    document.getElementById('statMonthlyRevenue').textContent = '¥' + (data.monthly_revenue ?? 0);
+    document.getElementById('statExpiringSoon').textContent = (data.expiring_soon ?? 0) + '人';
+  } catch (e) {
+    console.error('加载统计失败', e);
+  }
+}
+
+// 加载会员列表
+async function loadMembers(page = 1) {
+  currentPage = page;
+  const res = await fetch(`${API}/members`);
+  const data = await res.json();
+  
+  document.getElementById('memberCount').textContent = `共 ${data.length} 人`;
+  
+  const start = (page - 1) * pageSize;
+  const end = start + pageSize;
+  const pageData = data.slice(start, end);
+  
+  const tbody = document.getElementById('memberTable');
+  if (pageData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#999;">暂无数据</td></tr>';
+  } else {
+    tbody.innerHTML = pageData.map(m => {
+      const levelClass = m.level === '钻石会员' ? 'level-diamond' : m.level === 'VIP' ? 'level-vip' : 'level-normal';
+      
+      // 计算到期状态
+      let endDateText = '-';
+      let remainDaysText = '-';
+      let remainClass = '';
+      
+      if (m.level === '钻石会员') {
+        endDateText = '永久有效';
+        remainDaysText = '∞';
+        remainClass = 'style="color:#009933;font-weight:bold;"';
+      } else if (m.end_date || m.latest_end_date) {
+        const endDate = m.end_date || m.latest_end_date;
+        endDateText = endDate;
+        
+        // 计算剩余天数
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const end = new Date(endDate);
+        const diff = Math.floor((end - today) / (1000*60*60*24));
+        
+        if (diff > 7) {
+          remainDaysText = diff + '天';
+          remainClass = '';
+        } else if (diff > 0) {
+          remainDaysText = diff + '天';
+          remainClass = 'style="color:#f5a623;font-weight:bold;"';
+        } else if (diff === 0) {
+          remainDaysText = '今日到期';
+          remainClass = 'style="color:#ffc107;font-weight:bold;"';
+        } else {
+          remainDaysText = '已到期';
+          remainClass = 'style="color:#dc3545;font-weight:bold;"';
+        }
+      }
+      
+      return `<tr>
+        <td>${m.id}</td>
+        <td>${m.username}</td>
+        <td><span class="level-badge ${levelClass}">${m.level}</span></td>
+        <td>${m.video_streams}</td>
+        <td>${endDateText}</td>
+        <td ${remainClass}>${remainDaysText}</td>
+        <td class="actions">
+          <button class="btn btn-warning" onclick="openRechargeModal(${m.id}, '${m.username}')">充值</button>
+          <button class="btn btn-info" onclick="openRecordsModal(${m.id}, '${m.username}')">记录</button>
+          <button class="btn btn-primary" onclick="openEditModal(${m.id}, '${m.username}', '${m.level}', ${m.video_streams})">编辑</button>
+          <button class="btn btn-danger" onclick="deleteMember(${m.id})">删除</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+  
+  renderPagination(data.length);
+}
+
+function renderPagination(total) {
+  const totalPages = Math.ceil(total / pageSize);
+  const pagination = document.getElementById('pagination');
+  
+  if (totalPages <= 1) { pagination.innerHTML = ''; return; }
+  
+  let html = `<button ${currentPage === 1 ? 'disabled' : ''} onclick="loadMembers(${currentPage - 1})">上一页</button>`;
+  
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+      html += `<button class="${i === currentPage ? 'active' : ''}" onclick="loadMembers(${i})">${i}</button>`;
+    } else if (i === currentPage - 3 || i === currentPage + 3) {
+      html += '<span>...</span>';
+    }
+  }
+  
+  html += `<button ${currentPage === totalPages ? 'disabled' : ''} onclick="loadMembers(${currentPage + 1})">下一页</button>`;
+  pagination.innerHTML = html;
+}
+
+// 添加会员
+document.getElementById('addMemberForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const data = {
+    username: form.username.value,
+    level: form.level.value,
+    video_streams: parseInt(form.video_streams.value) || 0
+  };
+  
+  const res = await fetch(`${API}/members`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  
+  if (res.ok) {
+    showToast('会员添加成功', 'success');
+    form.reset();
+    loadMembers();
+    loadStats();
+  } else {
+    const err = await res.json();
+    showToast(err.error || '添加失败', 'error');
+  }
+});
+
+// 编辑会员
+function openEditModal(id, username, level, streams) {
+  document.querySelector('#editMemberForm input[name=id]').value = id;
+  document.querySelector('#editMemberForm input[name=username]').value = username;
+  document.querySelector('#editMemberForm select[name=level]').value = level;
+  document.querySelector('#editMemberForm input[name=video_streams]').value = streams;
+  document.getElementById('editModal').style.display = 'flex';
+}
+
+function closeEditModal() {
+  document.getElementById('editModal').style.display = 'none';
+}
+
+async function submitEdit() {
+  const form = document.getElementById('editMemberForm');
+  const id = form.id.value;
+  const data = {
+    username: form.username.value,
+    level: form.level.value,
+    video_streams: parseInt(form.video_streams.value) || 0
+  };
+  
+  const res = await fetch(`${API}/members/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  
+  if (res.ok) {
+    showToast('保存成功', 'success');
+    closeEditModal();
+    loadMembers(currentPage);
+  } else {
+    showToast('保存失败', 'error');
+  }
+}
+
+// 充值
+function openRechargeModal(id, username) {
+  document.querySelector('#rechargeForm input[name=member_id]').value = id;
+  document.getElementById('rechargeMemberName').textContent = username;
+  document.querySelector('#rechargeForm input[name=start_date]').value = new Date().toISOString().split('T')[0];
+  document.getElementById('rechargeModal').style.display = 'flex';
+}
+
+function closeRechargeModal() {
+  document.getElementById('rechargeModal').style.display = 'none';
+}
+
+function openRecordsModal(memberId, username) {
+  document.getElementById('recordsContent').innerHTML = '<p style="text-align:center;color:#999;">加载中...</p>';
+  document.getElementById('recordsModal').style.display = 'flex';
+  
+  // 设置标题
+  document.querySelector('#recordsModal .modal-header span').textContent = `充值记录 - ${username}`;
+  
+  // 获取充值记录
+  fetch(`${API}/members/${memberId}/recharges`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.length === 0) {
+        document.getElementById('recordsContent').innerHTML = '<p style="text-align:center;color:#999;">暂无充值记录</p>';
+        return;
+      }
+      
+      let html = `<table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="background:#f8f9fa;">
+            <th style="padding:10px;border-bottom:1px solid #dee2e6;text-align:left;">类型</th>
+            <th style="padding:10px;border-bottom:1px solid #dee2e6;text-align:left;">金额</th>
+            <th style="padding:10px;border-bottom:1px solid #dee2e6;text-align:left;">月数</th>
+            <th style="padding:10px;border-bottom:1px solid #dee2e6;text-align:left;">开始日期</th>
+            <th style="padding:10px;border-bottom:1px solid #dee2e6;text-align:left;">结束日期</th>
+            <th style="padding:10px;border-bottom:1px solid #dee2e6;text-align:left;">操作</th>
+          </tr>
+        </thead>
+        <tbody>`;
+      
+      data.forEach(r => {
+        const type = r.recharge_amount > 0 ? '充值' : '赠送';
+        const amount = r.recharge_amount > 0 
+          ? `¥${r.recharge_amount}` 
+          : (r.gift_months > 0 ? `${r.gift_months}月` : `${r.gift_days}天`);
+        const months = r.recharge_months > 0 ? `${r.recharge_months}月` : (r.gift_months > 0 ? `+${r.gift_months}月` : (r.gift_days > 0 ? `+${r.gift_days}天` : '-'));
+        
+        html += `<tr>
+          <td style="padding:10px;border-bottom:1px solid #dee2e6;">${type}</td>
+          <td style="padding:10px;border-bottom:1px solid #dee2e6;">${amount}</td>
+          <td style="padding:10px;border-bottom:1px solid #dee2e6;">${months}</td>
+          <td style="padding:10px;border-bottom:1px solid #dee2e6;">${r.start_date}</td>
+          <td style="padding:10px;border-bottom:1px solid #dee2e6;">${r.end_date}</td>
+          <td style="padding:10px;border-bottom:1px solid #dee2e6;">
+            <button class="btn btn-danger" style="padding:4px 10px;font-size:0.8rem;" onclick="deleteRecharge(${r.id}, ${memberId}, '${username}')">删除</button>
+          </td>
+        </tr>`;
+      });
+      
+      html += '</tbody></table>';
+      document.getElementById('recordsContent').innerHTML = html;
+    })
+    .catch(err => {
+      document.getElementById('recordsContent').innerHTML = '<p style="text-align:center;color:#dc3545;">加载失败</p>';
+    });
+}
+
+function closeRecordsModal() {
+  document.getElementById('recordsModal').style.display = 'none';
+}
+
+async function deleteRecharge(rechargeId, memberId, username) {
+  if (!confirm('确定要删除这条充值记录吗？')) return;
+  
+  const res = await fetch(`${API}/recharges/${rechargeId}`, { method: 'DELETE' });
+  if (res.ok) {
+    showToast('删除成功', 'success');
+    // 刷新记录列表
+    openRecordsModal(memberId, username);
+  } else {
+    showToast('删除失败', 'error');
+  }
+}
+
+async function submitRecharge() {
+  const form = document.getElementById('rechargeForm');
+  const member_id = form.member_id.value;
+  const data = {
+    recharge_amount: parseFloat(form.recharge_amount.value) || 0,
+    recharge_months: parseInt(form.recharge_months.value) || 0,
+    gift_months: parseInt(form.gift_months.value) || 0,
+    gift_days: parseInt(form.gift_days.value) || 0,
+    video_streams: parseInt(form.video_streams.value) || 0,
+    start_date: form.start_date.value,
+    remark: form.remark.value
+  };
+  
+  const res = await fetch(`${API}/members/${member_id}/recharge`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  
+  if (res.ok) {
+    showToast('充值成功', 'success');
+    closeRechargeModal();
+    form.reset();
+    loadStats();
+  } else {
+    showToast('充值失败', 'error');
+  }
+}
+
+// 删除会员
+async function deleteMember(id) {
+  if (!confirm('确定要删除该会员吗？')) return;
+  
+  const res = await fetch(`${API}/members/${id}`, { method: 'DELETE' });
+  if (res.ok) {
+    showToast('删除成功', 'success');
+    loadMembers(currentPage);
+    loadStats();
+  } else {
+    showToast('删除失败', 'error');
+  }
+}
+
+// Toast 提示
+function showToast(msg, type = '') {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.className = 'toast ' + type;
+  toast.style.display = 'block';
+  setTimeout(() => { toast.style.display = 'none'; }, 3000);
+}
+
+// 导出数据
+async function exportData() {
+  try {
+    const res = await fetch(`${API}/export`);
+    const data = await res.json();
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `member_backup_${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showToast('导出成功', 'success');
+  } catch (e) {
+    showToast('导出失败', 'error');
+  }
+}
+
+// 导入数据
+async function importData(fileInput) {
+  const file = fileInput.files[0];
+  if (!file) return;
+  
+  if (!confirm(`确定要导入数据${document.getElementById('importOverwrite').checked ? '（覆盖现有数据）' : '（追加模式）'}吗？`)) {
+    fileInput.value = '';
+    return;
+  }
+  
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      const overwrite = document.getElementById('importOverwrite').checked;
+      
+      const res = await fetch(`${API}/import`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...data, overwrite })
+      });
+      
+      const result = await res.json();
+      
+      const resultDiv = document.getElementById('importResult');
+      if (res.ok) {
+        resultDiv.innerHTML = `<span style="color:#28a745;">✅ 导入完成！</span> 会员 ${result.imported_members} 条，充值记录 ${result.imported_recharges} 条`;
+        resultDiv.style.display = 'block';
+        loadMembers();
+      } else {
+        resultDiv.innerHTML = `<span style="color:#dc3545;">❌ 导入失败：${result.error}</span>`;
+        resultDiv.style.display = 'block';
+      }
+    } catch (err) {
+      const resultDiv = document.getElementById('importResult');
+      resultDiv.innerHTML = `<span style="color:#dc3545;">❌ 文件格式错误</span>`;
+      resultDiv.style.display = 'block';
+    }
+    
+    fileInput.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// 初始化
+checkAdmin();
+</script>
+</body>
+</html>

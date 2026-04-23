@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>影视会员统计系统</title>
+<link rel="icon" href="/favicon.ico" type="image/x-icon">
+<style>
+  :root {
+    --primary: #007bff;
+    --success: #28a745;
+    --warning: #ffc107;
+    --danger: #dc3545;
+    --forever: #009933;
+    --bg: #f5f5f5;
+    --card: #fff;
+    --text: #333;
+    --text-secondary: #6c757d;
+    --border: #dee2e6;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, 'PingFang SC', Arial, sans-serif; }
+  body { background: var(--bg); padding: 20px; min-height: 100vh; }
+  .container { max-width: 800px; margin: 0 auto; }
+  h1 { text-align: center; color: var(--text); margin-bottom: 20px; font-size: 1.8rem; }
+  
+  .warning-box {
+    background: #fff3cd;
+    border: 1px solid #ffeeba;
+    color: #856404;
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+  }
+  .warning-box strong { font-size: 1rem; }
+  .warning-box ul { margin: 10px 0 0 20px; }
+  .warning-box li { margin: 5px 0; font-size: 0.9rem; }
+  
+  .card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    margin-bottom: 16px;
+  }
+  .card-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 16px; text-align: center; color: var(--text); }
+  
+  .form-group { margin-bottom: 15px; }
+  .form-group label { display: block; margin-bottom: 6px; font-weight: 600; color: #555; font-size: 0.9rem; }
+  .form-group input {
+    width: 100%; padding: 12px 14px; border: 1.5px solid var(--border);
+    border-radius: 8px; font-size: 1rem; transition: border-color 0.2s;
+  }
+  .form-group input:focus { outline: none; border-color: var(--primary); }
+  
+  .btn {
+    width: 100%; padding: 12px; background: var(--primary); color: white;
+    border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: background 0.2s;
+  }
+  .btn:hover { background: #0056b3; }
+  .btn:disabled { background: #ccc; cursor: not-allowed; }
+  
+  .result { margin-top: 20px; }
+  .result h2 { font-size: 1.2rem; margin-bottom: 12px; color: var(--text); }
+  .result p { margin: 8px 0; font-size: 0.95rem; }
+  .result p strong { color: #555; display: inline-block; width: 100px; }
+  
+  .status-normal { color: var(--text); }
+  .status-warning { color: #f5a623; font-weight: bold; }
+  .status-expired { color: var(--danger); font-weight: bold; }
+  .status-expire-today { color: var(--warning); font-weight: bold; }
+  .status-forever { color: var(--forever); font-weight: bold; }
+  .status-no-record { color: var(--text-secondary); }
+  
+  .total-box {
+    margin-top: 12px; padding: 12px; background: #f8f9fa;
+    border-radius: 8px; border: 1px solid var(--border);
+  }
+  .total-box p { margin: 4px 0; }
+  
+  .error { color: var(--danger); text-align: center; padding: 10px; background: #f8d7da; border-radius: 6px; }
+  
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.85rem; }
+  th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid var(--border); }
+  th { background: #f8f9fa; font-weight: 600; }
+  
+  .admin-link { text-align: center; margin-top: 20px; }
+  .admin-link a { color: var(--primary); text-decoration: none; }
+  .admin-link a:hover { text-decoration: underline; }
+  
+  .loading { text-align: center; color: var(--text-secondary); padding: 20px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>影视会员统计系统</h1>
+  
+  <div id="warnings" class="warning-box" style="display:none;">
+    <strong>⚠️ 会员到期提醒</strong>
+    <ul id="warningList"></ul>
+  </div>
+  
+  <div class="card">
+    <div class="card-title">会员查询</div>
+    <div id="errorMsg" class="error" style="display:none;"></div>
+    <form id="queryForm">
+      <div class="form-group">
+        <label for="username">用户名</label>
+        <input type="text" id="username" name="username" required placeholder="请输入要查询的用户名">
+      </div>
+      <button type="submit" class="btn" id="queryBtn">查询</button>
+    </form>
+  </div>
+  
+  <div id="result" class="card" style="display:none;">
+    <h2>会员信息</h2>
+    <p><strong>用户名：</strong><span id="resUsername"></span></p>
+    <p><strong>会员等级：</strong><span id="resLevel"></span></p>
+    <p><strong>视频流数：</strong><span id="resStreams"></span></p>
+    <p><strong>注册时间：</strong><span id="resCreateTime"></span></p>
+    <p><strong>最新到期日：</strong><span id="resEndDate"></span></p>
+    <p><strong>剩余日期：</strong><span id="resStatus"></span></p>
+    
+    <div class="total-box">
+      <p><strong>累计充值金额：</strong>¥<span id="resTotalRecharge">0</span></p>
+      <p><strong>累计赠送月份：</strong><span id="resGiftMonths">0</span>个月</p>
+      <p><strong>累计赠送天数：</strong><span id="resGiftDays">0</span>天</p>
+    </div>
+    
+    <h3 style="margin-top:15px; font-size:1rem;">充值/赠送记录</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>类型</th>
+          <th>金额/数量</th>
+          <th>视频流数</th>
+          <th>开始日期</th>
+          <th>结束日期</th>
+          <th>操作时间</th>
+        </tr>
+      </thead>
+      <tbody id="rechargeTable"></tbody>
+    </table>
+  </div>
+  
+  <div class="admin-link">
+    <a href="/admin">管理员入口</a>
+  </div>
+</div>
+
+<script>
+const API = '/api';
+
+async function fetchWarnings() {
+  try {
+    const res = await fetch(`${API}/warnings`);
+    const data = await res.json();
+    if (data.length > 0) {
+      const list = document.getElementById('warningList');
+      list.innerHTML = data.map(m => 
+        `<li>会员：${m.username} (${m.level}) - 视频流数：${m.video_streams} - 剩余天数：${Math.floor(m.remaining_days)}天 - 到期日：${m.end_date}</li>`
+      ).join('');
+      document.getElementById('warnings').style.display = 'block';
+    }
+  } catch (e) { console.error(e); }
+}
+
+document.getElementById('queryForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('queryBtn');
+  const username = document.getElementById('username').value.trim();
+  
+  btn.disabled = true;
+  btn.textContent = '查询中...';
+  document.getElementById('errorMsg').style.display = 'none';
+  document.getElementById('result').style.display = 'none';
+  
+  try {
+    const res = await fetch(`${API}/query`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username })
+    });
+    const data = await res.json();
+    
+    if (!res.ok) {
+      document.getElementById('errorMsg').textContent = data.error || '查询失败';
+      document.getElementById('errorMsg').style.display = 'block';
+      return;
+    }
+    
+    // 填充数据
+    document.getElementById('resUsername').textContent = data.member.username;
+    document.getElementById('resLevel').textContent = data.member.level;
+    document.getElementById('resStreams').textContent = data.member.video_streams;
+    document.getElementById('resCreateTime').textContent = data.member.create_time;
+    
+    const isDiamond = data.member.level === '钻石会员';
+    document.getElementById('resEndDate').innerHTML = isDiamond 
+      ? '<span class="status-forever">永久有效</span>'
+      : (data.latest_end_date || '无记录');
+    
+    const statusClass = {
+      'normal': 'status-normal',
+      'warning': 'status-warning', 
+      'expired': 'status-expired',
+      'expire-today': 'status-expire-today',
+      'forever': 'status-forever',
+      'no-record': 'status-no-record'
+    }[data.status.class] || 'status-normal';
+    
+    document.getElementById('resStatus').innerHTML = `<span class="${statusClass}">${data.status.text}</span>`;
+    
+    document.getElementById('resTotalRecharge').textContent = data.total_recharge;
+    document.getElementById('resGiftMonths').textContent = data.total_gift_months;
+    document.getElementById('resGiftDays').textContent = data.total_gift_days;
+    
+    // 充值记录
+    const tbody = document.getElementById('rechargeTable');
+    if (data.recharges.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;">暂无记录</td></tr>';
+    } else {
+      tbody.innerHTML = data.recharges.map(r => {
+        const type = r.recharge_amount > 0 ? '充值' : '赠送';
+        const amount = r.recharge_amount > 0 
+          ? `¥${r.recharge_amount} (${r.recharge_months}个月)`
+          : (r.gift_months > 0 ? `${r.gift_months}个月` : `${r.gift_days}天`);
+        return `<tr>
+          <td>${type}</td>
+          <td>${amount}</td>
+          <td>${r.video_streams}</td>
+          <td>${r.start_date}</td>
+          <td>${r.end_date}</td>
+          <td>${r.recharge_time}</td>
+        </tr>`;
+      }).join('');
+    }
+    
+    document.getElementById('result').style.display = 'block';
+  } catch (e) {
+    document.getElementById('errorMsg').textContent = '网络错误，请稍后重试';
+    document.getElementById('errorMsg').style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '查询';
+  }
+});
+
+fetchWarnings();
+</script>
+</body>
+</html>
