@@ -220,9 +220,8 @@ def add_recharge(member_id):
     if request.method == 'OPTIONS':
         return make_cors_json({'ok': True})
     data = request.json
-    required = ['start_date', 'end_date']
-    if not all(k in data for k in required):
-        return make_cors_json({'error': '缺少必填字段'}, 400)
+    if 'start_date' not in data:
+        return make_cors_json({'error': '缺少开始日期'}, 400)
     
     # 计算结束日期（基于开始日期 + 月份）
     from datetime import datetime, timedelta
